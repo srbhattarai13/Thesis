@@ -10,6 +10,33 @@ from torchvision import datasets, models, transforms
 
 
 
+''' code adapted from zijundeng/pytorch-semantic-segmentation'''
+
+
+class Encoder(nn.Module):
+    def __init__(self, in_channels, out_channels, dropout=False):
+        super(Encoder, self).__init__()
+
+        layers = [
+            nn.Conv2d(in_channels, out_channels, kernel_size=3),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(out_channels, out_channels, kernel_size=3),
+            nn.BatchNorm2d(out_channels, kernel_size=3),
+            nn.ReLU(inplace=True),
+        ]
+
+
+
+
+
+
+
+
+
+
+
 
 
 class Unet(nn.Module):
