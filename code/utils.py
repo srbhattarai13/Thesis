@@ -41,16 +41,19 @@ class Datainput(Dataset.Dataset):
         image = image.cuda()
 
         # read the features of same frame
-        feats = self.datafile.iloc[idx, 2]
-        feats = np.load(feats)
-        feats = torch.autograd.Variable(torch.from_numpy(feats))
-        feats = feats.squeeze()
-        feats = feats.cuda()
+        flow = self.datafile.iloc[idx, 2]
+        flow = np.load(flow)
+        flow = torch.autograd.Variable(torch.from_numpy(flow))
+        flow = flow.squeeze()
+        flow = flow.cuda()
 
         videos = self.datafile.iloc[idx,0]
 
-        sample = {'video': videos, 'frame': image, 'feats': feats}
+        sample = {'video': videos, 'frame': image, 'flow': flow}
 
         return sample
 
 
+# data_frame_feats = Datainput('data/traingListAVENUE.csv')
+#
+# print(data_frame_feats.size())

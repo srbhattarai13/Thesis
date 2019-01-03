@@ -1,13 +1,20 @@
-from __future__ import print_function, division
-import os
 import torch
-import pandas as pd
-from skimage import io, transform
-import numpy as np
-import matplotlib.pyplot as plt
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, utils
 import torch.nn as nn
+from torch.autograd import Variable
+import torch.utils.data.dataset as Dataset
+import torchvision.transforms as transforms
+
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+
+
+from utils import Datainput
+
+
+# def downcon(input_channel, output_channel, kernel_size=3, stride=1, padding=1):
+#     conv1 =
+
 
 class Unet(nn.Module):
     def __init__(self):
@@ -103,3 +110,80 @@ class Unet(nn.Module):
 
 
 
+# function for loading a frame
+def loadGT(frame):
+    optflow = np.load(frame)
+    optflow_variable = torch.autograd.Variable(torch.from_numpy(optflow))
+    return optflow_variable
+
+
+
+# transforming image into tensor
+img_width,img_height = 256,256
+img_loader = transforms.Compose([transforms.Resize((img_width,img_height)),
+                                 transforms.ToTensor(),
+                                 transforms.Normalize((0.485,0.456,0.406),(0.229,0.224,0.225))])
+
+
+# load frame
+def image_loader(image_name):
+    image = Image.open(image_name)
+    # image.show()
+    image = img_loader(image).float()
+    image = Variable(image)
+    image = image.unsqueeze(0)
+
+    return image.cuda()
+
+
+#data inputs
+data_opt_img = Datainput('data/traingListAVENUE.csv')
+
+print(data_opt_img.len())
+# train_loader = torch.utils.data.DataLoader(data_opt_img,batch_size=32, shuffle=True)
+#
+#
+# for i, batch in enumerate(train_loader):
+#     print(i)
+
+
+
+# mdl = Unet().cuda()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# frame_tensor = image_loader("../datasets/avenue/training/optical_flowmap/01/0000.png")
+#
+# x = mdl(frame_tensor)
+#
+# x = x.view(256,256,3)
+# x = x.detach().cpu()
+# trs = transforms.ToPILImage()
+# plt.imshow(trs(x))
+# plt.show()
+
+# print(x.size())
