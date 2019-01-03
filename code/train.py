@@ -10,180 +10,69 @@ import matplotlib.pyplot as plt
 
 
 from utils import Datainput
+from u-net import Unet
+import argparse
 
 
-# def downcon(input_channel, output_channel, kernel_size=3, stride=1, padding=1):
-#     conv1 =
-
-
-class Unet(nn.Module):
-    def __init__(self):
-        super(Unet, self).__init__()
-
-        self.downconv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
-        self.downconv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
-        self.drelu1    = nn.ReLU(inplace=True)
-        self.dmaxp1    = nn.MaxPool2d(kernel_size=2, stride=2)
-
-        self.downconv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
-        self.downconv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
-        self.drelu2    = nn.ReLU(inplace=True)
-        self.dmaxp2    = nn.MaxPool2d(kernel_size=2, stride=2)
-
-        self.downconv5 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
-        self.downconv6 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        self.drelu3    = nn.ReLU(inplace=True)
-        self.dmaxp3    = nn.MaxPool2d(kernel_size=2, stride=2)
-
-        self.downconv7 = nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1)
-        self.downconv8 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        self.drelu4    = nn.ReLU(inplace=True)
-
-
-        # upsample
-
-        self.upconv1 = nn.Conv2d(512, 256, kernel_size=3, stride=1, padding=1)
-        self.upconv2 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        self.urelu1  = nn.ReLU(inplace=True)
-
-        self.upconv3 = nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1)
-        self.upconv4 = nn.Conv2d(128, 128,  kernel_size=3, stride=1, padding=1)
-        self.urelu2  = nn.ReLU(inplace=True)
-
-        self.upconv5 = nn.Conv2d(128,64, kernel_size=3, stride=1, padding=1)
-        self.upconv6 = nn.Conv2d(64, 3, kernel_size=3, stride=1, padding=1)
-        self.urelu3  = nn.ReLU(inplace=True)
-
-
-        # self.up = nn.functional.interpolate(scale_factor=2, mode='bilinear')
-
-    def forward(self, x):
-        x = self.downconv1(x)
-        x = self.downconv2(x)
-        x1 = self.drelu1(x)
-        x = self.dmaxp1(x1)
-
-
-        x = self.downconv3(x)
-        x = self.downconv4(x)
-        x2 = self.drelu2(x)
-        x = self.dmaxp2(x2)
-
-        x = self.downconv5(x)
-        x = self.downconv6(x)
-        x3 = self.drelu3(x)
-        x = self.dmaxp3(x3)
-
-        x = self.downconv7(x)
-        x4 = self.downconv8(x)
-        x = self.drelu4(x4)
-
-        x = nn.functional.interpolate(x,scale_factor=2, mode='bilinear')
-        # x = self.up(x4)
-
-        # x = torch.cat((x,x3), dim=1)
-        # x = x.view(-1, 512,64,64)
-
-        x = self.upconv1(x)
-        x = self.upconv2(x)
-        x = self.urelu1(x)
-
-        x = nn.functional.interpolate(x,scale_factor=2, mode='bilinear')
-
-        # x = self.up(x)
-
-        x = self.upconv3(x)
-        x = self.upconv4(x)
-        x = self.urelu2(x)
-
-        x = nn.functional.interpolate(x,scale_factor=2, mode='bilinear')
-
-
-        # x = self.up(x)
-
-        x = self.upconv5(x)
-        x = self.upconv6(x)
-        x = self.urelu3(x)
-
-
-        return x
+from tensorboardX import SummaryWriter
 
 
 
-# function for loading a frame
-def loadGT(frame):
-    optflow = np.load(frame)
-    optflow_variable = torch.autograd.Variable(torch.from_numpy(optflow))
-    return optflow_variable
+# parsing the arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('--file',  help= 'Csv file Path', required=True)
+parser.add_argument('--dataset', help=' Name of dataset' , required=True)
+# parser.add_argument('--training', type= bool, help="Type True for Pretrained, False: for Scratch Model")
+parser.add_argument('--batch_size',type = int, default=10, help= 'Enter the batch size', required=True)
+parser.add_argument('--epoch', type=int, default=5, help=" number of epoch")
+parser.add_argument('--lrate', type=float, default=0.01, help=" examples: --lrate 0.002")
+# parser.add_argument('--name', help=" Type the name extension", required=True)
+args = parser.parse_args()
 
 
-
-# transforming image into tensor
-img_width,img_height = 256,256
-img_loader = transforms.Compose([transforms.Resize((img_width,img_height)),
-                                 transforms.ToTensor(),
-                                 transforms.Normalize((0.485,0.456,0.406),(0.229,0.224,0.225))])
-
-
-# load frame
-def image_loader(image_name):
-    image = Image.open(image_name)
-    # image.show()
-    image = img_loader(image).float()
-    image = Variable(image)
-    image = image.unsqueeze(0)
-
-    return image.cuda()
+#specifying the name of summary file
+writer = SummaryWriter('logs/'+ str(args.dataset) +'/train_'+ str(args.batch_size) + '_'+ str(args.lrate))
 
 
 #data inputs
-data_opt_img = Datainput('data/traingListAVENUE.csv')
-
-print(data_opt_img.len())
-# train_loader = torch.utils.data.DataLoader(data_opt_img,batch_size=32, shuffle=True)
-#
-#
-# for i, batch in enumerate(train_loader):
-#     print(i)
+data_opt_img = Datainput(args.file)
+train_loader = torch.utils.data.DataLoader(data_opt_img,batch_size=args.batch_size, shuffle=True)
 
 
+# model definition, loss, optimizer
+unet = Unet()
+unet.train() # Training mode
+unet = unet.cuda()
+MSE = torch.nn.MSELoss()
+optimizer = torch.optim.Adam(unet.parameters(), 0.001)
 
-# mdl = Unet().cuda()
+iteration = 0
+
+for epoch in range(args.epoch):
+    for batch_number, batch in enumerate(train_loader):
+
+        iteration = iteration + 1
+
+        predFlow = unet(batch['frame'])
+        gtFlow = batch['flow']
+
+        # compute the loss
+        loss = MSE(predFlow, gtFlow)
+
+        print(' Dataset: {}  Loss: {}  Batch_size: {} Epoch: {}  Iteration: {}   Remaning Epoch: {} Learning Rate: {} '.format(args.dataset, loss.item(), args.batch_size, epoch+1, iteration, args.epoch-1 - epoch, args.lrate))
+
+        writer.add_scalar('train_loss_'+ str(args.dataset) + '_' + str(args.name) , loss.item(), iteration)
+
+        # Zero the gradients
+        optimizer.zero_grad()
+
+        # Backpropagation
+        loss.backward()
+
+        # update the parameters
+        optimizer.step()
 
 
+    if epoch % 2 == 0:
+        torch.save(unet.state_dict(), 'checkpoints/'+ str(args.dataset) + '/NET_batch_'+ str(args.batch_size) + '_epoch_' + str(epoch)+ '_' + str(args.name) +str(args.lrate)+ '.pt')
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# frame_tensor = image_loader("../datasets/avenue/training/optical_flowmap/01/0000.png")
-#
-# x = mdl(frame_tensor)
-#
-# x = x.view(256,256,3)
-# x = x.detach().cpu()
-# trs = transforms.ToPILImage()
-# plt.imshow(trs(x))
-# plt.show()
-
-# print(x.size())
