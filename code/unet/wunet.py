@@ -43,31 +43,8 @@ class Unet(nn.Module):
 
     def forward(self, x, input_channel=2, features_root=64, filter_size=3, pool_size=2, stride=1):
 
-        x = self.downConv()
-        x = self.downconv1(x)
-        x = self.drelu(x)
-        x = self.downconv2(x)
-        c1 = self.drelu(x)
-        x = self.dmaxpool(c1)
-
-
-        x = self.downconv3(x)
-        x = self.drelu(x)
-        x = self.downconv4(x)
-        c2 = self.drelu(x)
-        x  = self.dmaxpool(c2)
-
-        x = self.downconv5(x)
-        x = self.drelu(x)
-        x = self.downconv6(x)
-        c3 = self.drelu(x)
-        x = self.dmaxpool(c3)
-
-        x = self.downconv7(x)
-        x = self.drelu(x)
-        x = self.downconv8(x)
-        x = self.drelu(x)
-
+        for layer in range(0, self.layers):
+            features = 2**layer*features_root
 
         x = self.trans(x)
         x = nn.functional.interpolate(x, scale_factor=2, mode='bilinear', align_corners=True)
